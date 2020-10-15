@@ -94,6 +94,9 @@ ${mainJS.content}
     const fn = handlers[type];
     if (fn) {
       fn(data);
+    } else {
+      // pass the message to the frame
+      iframe.contentWindow.postMessage({type, data}, '*');
     }
   })
 })();
