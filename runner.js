@@ -1,12 +1,5 @@
 (function() {
-  window.parent.postMessage({
-    type: 'gimmeDaCodez',
-  }, "*");
-
-  // forward messages from iframe to parent
-  window.addEventListener('message', (e) => {
-    window.parent.postMessage(e.data, "*");
-  });
+  let iframe;
 
   function find(files, endings) {
     // calling toLowerCase a bunch is bad but there will never be more than a few files
@@ -73,6 +66,7 @@ ${mainJS.content}
     const blob = new Blob([html], {type: 'text/html'});
     document.body.appendChild(iframe);
     iframe.src = URL.createObjectURL(blob);
+    return iframe;
   }
 
   const handlers = {
@@ -84,7 +78,7 @@ ${mainJS.content}
       if (data.inline) {
         insertInline(mainHTML, mainJS, mainCSS);
       } else {
-        insertInBlob(mainHTML, mainJS, mainCSS);
+        iframe = insertInBlob(mainHTML, mainJS, mainCSS);
       }
     },
   };
@@ -95,8 +89,23 @@ ${mainJS.content}
     if (fn) {
       fn(data);
     } else {
-      // pass the message to the frame
-      iframe.contentWindow.postMessage({type, data}, '*');
+      const isInner = iframe && e.source === iframe.contentWindow;
+      const isTop = e.source === window.parent;
+      if (isInner) {
+        // pass message to parent
+        window.parent.postMessage({type, data}, '*');
+      } else if (isTop) {
+        // pass the message to the frame
+        iframe.contentWindow.postMessage({type, data}, '*');
+      } else {
+        // unknown message source
+        console.log(isInner, isTop, e);
+      }
     }
-  })
+  });
+
+  window.parent.postMessage({
+    type: 'gimmeDaCodez',
+  }, "*");
+
 })();
